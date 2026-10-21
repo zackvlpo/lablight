@@ -22,6 +22,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
         body { background-color: #f8fafc; color: var(--text-color); padding: 20px; }
 
+        /* ENCABEZADO */
         .app-header {
             display: flex; justify-content: space-between; align-items: center;
             background: var(--bg-dark); color: white; padding: 15px 25px;
@@ -45,10 +46,13 @@
         .btn-success { background: var(--success-color); color: white; }
         .btn-secondary { background: #475569; color: white; }
         .btn-danger { background: var(--danger-color); color: white; }
+        .btn-tab { background: #e2e8f0; color: #334155; padding: 6px 12px; font-size: 0.8rem; }
+        .btn-tab.active { background: var(--primary-color); color: white; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .btn:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.1); }
 
-        .main-layout { display: grid; grid-template-columns: 320px 1.2fr 1fr; gap: 20px; margin-bottom: 20px; }
+        /* LAYOUT PRINCIPAL */
+        .main-layout { display: grid; grid-template-columns: 310px 1.2fr 1.1fr; gap: 20px; margin-bottom: 20px; }
         .panel { background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .panel h2 { font-size: 1.05rem; color: var(--bg-dark); margin-bottom: 15px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
 
@@ -59,31 +63,32 @@
         .toggle-group input { width: 18px; height: 18px; cursor: pointer; }
         .button-group { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
 
-        /* BENCH ESPECTROFOTOMÉTRICO (ESQUEMA DE ÓPTICA) */
+        /* BANCO ÓPTICO ANIMADO */
         .optics-bench {
             display: flex; align-items: center; justify-content: space-between;
-            height: 220px; background: #020617; border-radius: 10px; padding: 15px 10px;
+            height: 230px; background: #020617; border-radius: 10px; padding: 15px;
             position: relative; overflow: hidden; border: 1px solid #1e293b;
+            transition: background-color 0.15s ease;
         }
+        .optics-bench.flash { background-color: #1e293b; }
 
-        /* MÓDULO EMISOR LED */
         .optical-element { display: flex; flex-direction: column; align-items: center; z-index: 2; }
         .led-source {
-            width: 36px; height: 36px; border-radius: 50%; background: #334155;
+            width: 38px; height: 38px; border-radius: 50%; background: #1e293b;
             border: 3px solid #64748b; display: flex; align-items: center; justify-content: center;
             box-shadow: 0 0 15px rgba(255,255,255,0.2); transition: all 0.3s ease;
         }
         .led-core { width: 16px; height: 16px; border-radius: 50%; background: #fff; }
-        .element-label { color: #94a3b8; font-size: 0.7rem; font-weight: 600; margin-top: 6px; text-transform: uppercase; }
+        .element-label { color: #94a3b8; font-size: 0.72rem; font-weight: 600; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
 
-        /* LENTE COLIMADORA */
         .lens {
-            width: 12px; height: 60px; background: rgba(186, 230, 253, 0.4);
-            border: 1px solid #7dd3fc; border-radius: 50%/10%; backdrop-filter: blur(2px);
+            width: 14px; height: 70px; background: rgba(186, 230, 253, 0.35);
+            border: 1.5px solid #7dd3fc; border-radius: 50%/10%; backdrop-filter: blur(3px);
+            box-shadow: 0 0 8px rgba(125, 211, 252, 0.4);
         }
 
-        /* HAZ DE LUZ ANIMADO */
-        .beam-path { height: 14px; flex-grow: 1; position: relative; display: flex; align-items: center; }
+        /* HACES DE LUZ FOTÓNICOS ANIMADOS */
+        .beam-path { height: 16px; flex-grow: 1; position: relative; display: flex; align-items: center; }
         .light-beam {
             height: 100%; width: 100%; background: #22c55e;
             box-shadow: 0 0 12px #22c55e; transition: all 0.3s ease;
@@ -91,21 +96,28 @@
         }
         .light-beam::after {
             content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
-            animation: beam-pulse 1.8s infinite linear;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent);
+            animation: beam-pulse 1.5s infinite linear;
         }
         @keyframes beam-pulse { 0% { left: -100%; } 100% { left: 100%; } }
 
-        /* CUBETA ÓPTICA */
+        /* CUBETA CON PASO ÓPTICO DINÁMICO */
         .cuvette-holder { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; }
         .cuvette {
-            width: 65px; height: 110px; border: 3px solid rgba(255,255,255,0.85);
+            width: 60px; /* Cambia dinámicamente con JS según L */
+            height: 120px; border: 3px solid rgba(255,255,255,0.9);
             border-top: none; border-radius: 0 0 6px 6px; position: relative;
-            background: rgba(255,255,255,0.03); overflow: hidden;
+            background: rgba(255,255,255,0.04); overflow: hidden;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: inset 0 0 10px rgba(255,255,255,0.1);
         }
         .liquid {
-            position: absolute; bottom: 0; width: 100%; height: 85%;
+            position: absolute; bottom: 0; width: 100%; height: 88%;
             background-color: rgba(34, 197, 94, 0.0); transition: background-color 0.3s ease;
+        }
+        .meniscus {
+            position: absolute; top: -4px; left: 0; width: 100%; height: 8px;
+            background: rgba(255,255,255,0.3); border-radius: 50%;
         }
         .cuvette-marks {
             position: absolute; right: 4px; top: 15%; bottom: 5%;
@@ -113,24 +125,24 @@
         }
         .mark { width: 6px; height: 1px; background: rgba(255,255,255,0.4); }
 
-        /* FOTODETECTOR */
         .detector {
-            width: 30px; height: 50px; background: #334155; border: 2px solid #475569;
-            border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 32px; height: 52px; background: #1e293b; border: 2px solid #475569;
+            border-radius: 6px; display: flex; align-items: center; justify-content: center;
         }
-        .sensor-eye { width: 12px; height: 12px; background: #f59e0b; border-radius: 50%; box-shadow: 0 0 6px #f59e0b; }
+        .sensor-eye { width: 14px; height: 14px; background: #f59e0b; border-radius: 50%; box-shadow: 0 0 8px #f59e0b; transition: all 0.3s; }
 
-        /* PANEL DE LECTURA DIGITAL */
         .readout-box { display: flex; justify-content: space-around; margin-top: 15px; background: #f1f5f9; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; }
         .readout { text-align: center; }
         .readout small { color: #64748b; font-size: 0.75rem; font-weight: 600; display: block; }
         .readout strong { font-size: 1.15rem; color: var(--bg-dark); }
 
-        /* GRÁFICOS Y RECTAS */
-        .chart-wrapper { height: 175px; margin-bottom: 12px; position: relative; }
+        /* GRÁFICOS Y TABBED VIEW */
+        .chart-container-box { position: relative; height: 360px; margin-bottom: 10px; }
+        .chart-view { position: absolute; width: 100%; height: 100%; visibility: hidden; opacity: 0; transition: opacity 0.2s; }
+        .chart-view.active { visibility: visible; opacity: 1; }
         .regression-info { display: flex; justify-content: space-between; background: #e2e8f0; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; }
 
-        /* TABLA Y MATRIZ */
+        /* TABLA DE DATOS */
         .panel-table { width: 100%; }
         .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .table-wrapper { overflow-x: auto; max-height: 220px; }
@@ -158,10 +170,9 @@
         </div>
     </header>
 
-    <!-- CUERPO DE LA APLICACIÓN -->
     <main class="main-layout">
 
-        <!-- PANEL 1: CONTROLES DE PARÁMETROS -->
+        <!-- PANEL 1: CONTROLES -->
         <section class="panel panel-controls">
             <h2>1. Configuración del Ensayo</h2>
             
@@ -200,39 +211,28 @@
             </div>
         </section>
 
-        <!-- PANEL 2: BENCH ESPECTROFOTOMÉTRICO (VISUALIZACIÓN DE ÓPTICA) -->
+        <!-- PANEL 2: BENCH ESPECTROFOTOMÉTRICO (ANIMADO Y DINÁMICO) -->
         <section class="panel panel-visualizer">
-            <h2>2. Celda Fotométrica Virtual <small style="font-weight: normal; color: #64748b;">(Montaje Óptico)</small></h2>
+            <h2>2. Celda Fotométrica Virtual <small style="font-weight: normal; color: #64748b;">(Esquema Óptico)</small></h2>
             
-            <div class="optics-bench">
-                <!-- Fuente Emisora LED -->
+            <div class="optics-bench" id="optics-bench">
                 <div class="optical-element">
-                    <div class="led-source" id="led-source">
-                        <div class="led-core"></div>
-                    </div>
+                    <div class="led-source" id="led-source"><div class="led-core"></div></div>
                     <span class="element-label">Emisor LED</span>
                 </div>
 
-                <!-- Haz Entrante -->
-                <div class="beam-path">
-                    <div class="light-beam" id="light-entry"></div>
-                </div>
+                <div class="beam-path"><div class="light-beam" id="light-entry"></div></div>
 
-                <!-- Lente Colimadora -->
                 <div class="optical-element">
                     <div class="lens"></div>
                     <span class="element-label">Lente</span>
                 </div>
 
-                <!-- Haz Enfocado -->
-                <div class="beam-path">
-                    <div class="light-beam" id="light-focused"></div>
-                </div>
+                <div class="beam-path"><div class="light-beam" id="light-focused"></div></div>
 
-                <!-- Cubeta de Muestra -->
                 <div class="cuvette-holder">
-                    <div class="cuvette">
-                        <div class="liquid" id="liquid"></div>
+                    <div class="cuvette" id="cuvette">
+                        <div class="liquid" id="liquid"><div class="meniscus"></div></div>
                         <div class="cuvette-marks">
                             <div class="mark"></div><div class="mark"></div><div class="mark"></div>
                         </div>
@@ -240,21 +240,16 @@
                     <span class="element-label">Cubeta (L = <span id="label-L">1.0</span> cm)</span>
                 </div>
 
-                <!-- Haz Transmitido (Atenuado) -->
-                <div class="beam-path">
-                    <div class="light-beam" id="light-exit"></div>
-                </div>
+                <div class="beam-path"><div class="light-beam" id="light-exit"></div></div>
 
-                <!-- Fotodetector -->
                 <div class="optical-element">
                     <div class="detector">
-                        <div class="sensor-eye"></div>
+                        <div class="sensor-eye" id="sensor-eye"></div>
                     </div>
                     <span class="element-label">Sensor</span>
                 </div>
             </div>
 
-            <!-- Pantalla de Mediciones -->
             <div class="readout-box">
                 <div class="readout"><small>Intensidad (I)</small><strong id="readout-I">--- %</strong></div>
                 <div class="readout"><small>Transmitancia (T)</small><strong id="readout-T">---</strong></div>
@@ -262,11 +257,26 @@
             </div>
         </section>
 
-        <!-- PANEL 3: CURVAS Y AJUSTE ANALÍTICO -->
+        <!-- PANEL 3: CURVAS ANALÍTICAS CON SELECCIÓN DE PESTAÑAS -->
         <section class="panel panel-charts">
-            <h2>3. Curvas Analíticas en Tiempo Real</h2>
-            <div class="chart-wrapper"><canvas id="chart-transmittance"></canvas></div>
-            <div class="chart-wrapper"><canvas id="chart-absorbance"></canvas></div>
+            <h2>
+                3. Curvas Analíticas
+                <div class="tab-group">
+                    <button class="btn btn-tab active" id="tab-both">📊 Ambas</button>
+                    <button class="btn btn-tab" id="tab-T">📉 T vs c</button>
+                    <button class="btn btn-tab" id="tab-A">📈 A vs c</button>
+                </div>
+            </h2>
+            
+            <div class="chart-container-box">
+                <div class="chart-view active" id="view-both" style="display: flex; flex-direction: column; gap: 10px; height: 100%;">
+                    <div style="flex: 1; position: relative;"><canvas id="chart-T-small"></canvas></div>
+                    <div style="flex: 1; position: relative;"><canvas id="chart-A-small"></canvas></div>
+                </div>
+                <div class="chart-view" id="view-T" style="height: 100%;"><canvas id="chart-T-big"></canvas></div>
+                <div class="chart-view" id="view-A" style="height: 100%;"><canvas id="chart-A-big"></canvas></div>
+            </div>
+
             <div class="regression-info">
                 <span>Ajuste Lineal: <strong>A = <span id="reg-slope">0.000</span> &middot; c</strong></span>
                 <span>Coeficiente R²: <strong id="reg-r2">---</strong></span>
@@ -275,7 +285,7 @@
 
     </main>
 
-    <!-- PANEL 4: TABLA DE DATOS Y EXPORTADOR A EXCEL EN ESPAÑOL -->
+    <!-- PANEL 4: TABLA DE DATOS Y EXPORTADOR EN ESPAÑOL -->
     <footer class="panel panel-table">
         <div class="table-header">
             <h2>4. Matriz de Datos de la Sesión</h2>
@@ -295,19 +305,16 @@
                         <th>Absorbancia (A)</th>
                     </tr>
                 </thead>
-                <tbody id="table-body">
-                    <!-- Registros dinámicos -->
-                </tbody>
+                <tbody id="table-body"></tbody>
             </table>
         </div>
     </footer>
 
-    <!-- LÓGICA DE CONTROL Y MOTOR CIENTÍFICO -->
     <script>
         let isCalibrated = false;
         let I0 = 100.0;
         let measurements = [];
-        let chartT, chartA;
+        let chartTSmall, chartASmall, chartTBig, chartABig;
 
         const selectWavelength = document.getElementById('select-wavelength');
         const selectPathlength = document.getElementById('select-pathlength');
@@ -322,8 +329,11 @@
         const btnExportCSV = document.getElementById('btn-export-csv');
 
         const statusBadge = document.getElementById('status-badge');
+        const opticsBench = document.getElementById('optics-bench');
+        const cuvette = document.getElementById('cuvette');
         const liquid = document.getElementById('liquid');
         const ledSource = document.getElementById('led-source');
+        const sensorEye = document.getElementById('sensor-eye');
         const lightEntry = document.getElementById('light-entry');
         const lightFocused = document.getElementById('light-focused');
         const lightExit = document.getElementById('light-exit');
@@ -338,9 +348,9 @@
         document.addEventListener('DOMContentLoaded', () => {
             initCharts();
             updateSimulationUI();
+            setupTabs();
         });
 
-        // Generador de Ruido Gaussiano (Box-Muller)
         function getGaussianNoise(sigma = 0.015) {
             if (!toggleNoise.checked) return 0.0;
             let u1 = Math.random(), u2 = Math.random();
@@ -348,7 +358,6 @@
             return Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2) * sigma;
         }
 
-        // Actualización Visual y Algorítmica
         function updateSimulationUI() {
             const c = parseFloat(sliderConc.value);
             const L = parseFloat(selectPathlength.value);
@@ -359,11 +368,13 @@
             valConc.textContent = c.toFixed(2);
             labelL.textContent = L.toFixed(1);
 
-            // Mapeo de Colores por Longitud de Onda
+            // Ancho físico dinámico de la cubeta según L (0.5cm -> 40px, 1.0cm -> 60px, 2.0cm -> 95px)
+            const cuvetteWidths = { '0.5': '42px', '1.0': '62px', '2.0': '95px' };
+            cuvette.style.width = cuvetteWidths[L] || '62px';
+
             const colorMap = { '470': '#3b82f6', '525': '#22c55e', '630': '#ef4444' };
             const currentColor = colorMap[wl] || '#22c55e';
 
-            // Iluminación de componentes
             ledSource.style.borderColor = currentColor;
             ledSource.style.boxShadow = `0 0 15px ${currentColor}`;
             lightEntry.style.backgroundColor = currentColor;
@@ -371,17 +382,16 @@
             lightFocused.style.backgroundColor = currentColor;
             lightFocused.style.boxShadow = `0 0 10px ${currentColor}`;
 
-            // Opacidad de solución líquida
             liquid.style.backgroundColor = currentColor;
             liquid.style.opacity = Math.min(c * 0.92 + 0.08, 1.0);
 
             if (!isCalibrated) {
                 readoutI.textContent = "--- %"; readoutT.textContent = "---"; readoutA.textContent = "--- AU";
                 lightExit.style.opacity = 1; lightExit.style.backgroundColor = currentColor;
+                sensorEye.style.boxShadow = `0 0 8px ${currentColor}`;
                 return;
             }
 
-            // Modelo Físico Ley de Beer-Lambert: A = epsilon * c * L
             const A_theoretical = epsilon * c * L;
             let T_theoretical = Math.pow(10, -A_theoretical);
             let T_simulated = Math.max(0.001, Math.min(1.0, T_theoretical + getGaussianNoise(0.015)));
@@ -393,12 +403,11 @@
             readoutT.textContent = T_simulated.toFixed(3);
             readoutA.textContent = A_simulated.toFixed(3);
 
-            // Salida de Luz Atenuada
             lightExit.style.backgroundColor = currentColor;
             lightExit.style.opacity = T_simulated;
+            sensorEye.style.opacity = Math.max(0.15, T_simulated);
         }
 
-        // Eventos de usuario
         sliderConc.addEventListener('input', updateSimulationUI);
         selectWavelength.addEventListener('change', updateSimulationUI);
         selectPathlength.addEventListener('change', updateSimulationUI);
@@ -414,6 +423,11 @@
 
         btnMeasure.addEventListener('click', () => {
             if (!isCalibrated) return;
+
+            // Animación de destello de captura fotométrica
+            opticsBench.classList.add('flash');
+            setTimeout(() => opticsBench.classList.remove('flash'), 150);
+
             const c = parseFloat(sliderConc.value);
             const L = parseFloat(selectPathlength.value);
             const wl = selectWavelength.value;
@@ -445,12 +459,12 @@
             tableBody.appendChild(row);
         }
 
-        // Exportación CSV / Excel traducida al Español con UTF-8 BOM
         btnExportCSV.addEventListener('click', () => {
             if (measurements.length === 0) { alert("No hay datos registrados para exportar."); return; }
             
-            // \uFEFF añade el Byte Order Mark UTF-8 para que Excel lo abra con formato perfecto
             let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+            csvContent += "# LABLIGHT VIRTUAL - REGISTRO EXPERIMENTAL DE ESPECTROFOTOMETRÍA\n";
+            csvContent += `# Fecha: ${new Date().toLocaleDateString('es-CL')}\n`;
             csvContent += "N°,Longitud_Onda_nm,Paso_Optico_cm,Concentracion_M,Intensidad_Base_pct,Intensidad_Transmitida_pct,Transmitancia_T,Absorbancia_AU\n";
             
             measurements.forEach(m => { 
@@ -460,42 +474,93 @@
             const link = document.createElement("a");
             link.setAttribute("href", encodeURI(csvContent));
             link.setAttribute("download", "matriz_datos_lablight.csv");
-            document.body.appendChild(link); 
-            link.click(); 
-            document.body.removeChild(link);
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
         });
 
-        // Gráficos con Puntos Grandes y Rangos Adaptables
-        function initCharts() {
-            const ctxT = document.getElementById('chart-transmittance').getContext('2d');
-            const ctxA = document.getElementById('chart-absorbance').getContext('2d');
-            if (chartT) chartT.destroy(); if (chartA) chartA.destroy();
+        // PESTAÑAS DE VISUALIZACIÓN GRÁFICA
+        function setupTabs() {
+            const btnBoth = document.getElementById('tab-both');
+            const btnT = document.getElementById('tab-T');
+            const btnA = document.getElementById('tab-A');
+            const viewBoth = document.getElementById('view-both');
+            const viewT = document.getElementById('view-T');
+            const viewA = document.getElementById('view-A');
 
-            chartT = new Chart(ctxT, {
-                type: 'line',
-                data: { datasets: [{ label: 'Transmitancia (T vs c)', data: [], borderColor: '#0d6efd', backgroundColor: '#0d6efd', pointRadius: 7, pointHoverRadius: 10, borderWidth: 2, showLine: true }] },
-                options: { responsive: true, maintainAspectRatio: false, scales: { x: { title: { display: true, text: 'Concentración c (M)' }, min: 0, max: 1 }, y: { title: { display: true, text: 'T (I/I₀)' }, min: 0, max: 1.05 } } }
-            });
+            function switchTab(activeBtn, activeView) {
+                [btnBoth, btnT, btnA].forEach(b => b.classList.remove('active'));
+                [viewBoth, viewT, viewA].forEach(v => v.classList.remove('active'));
+                activeBtn.classList.add('active');
+                activeView.classList.add('active');
+            }
 
-            chartA = new Chart(ctxA, {
+            btnBoth.addEventListener('click', () => switchTab(btnBoth, viewBoth));
+            btnT.addEventListener('click', () => switchTab(btnT, viewT));
+            btnA.addEventListener('click', () => switchTab(btnA, viewA));
+        }
+
+        // GRÁFICOS CON ESCALA LINEAL Y PUNTOS ORDENADOS
+        function createChartConfig(type, labelX, labelY, maxY, isLine = false) {
+            return {
                 type: 'scatter',
-                data: { datasets: [{ label: 'Absorbancia (A vs c)', data: [], borderColor: '#198754', backgroundColor: '#198754', pointRadius: 7, pointHoverRadius: 10 }] },
-                options: { responsive: true, maintainAspectRatio: false, scales: { x: { title: { display: true, text: 'Concentración c (M)' }, min: 0, max: 1 }, y: { title: { display: true, text: 'Absorbancia A (AU)' }, min: 0, suggestedMax: 3.5 } } }
-            });
+                data: {
+                    datasets: [{
+                        label: labelY,
+                        data: [],
+                        borderColor: isLine ? '#0d6efd' : '#198754',
+                        backgroundColor: isLine ? '#0d6efd' : '#198754',
+                        pointRadius: 7,
+                        pointHoverRadius: 10,
+                        borderWidth: 2,
+                        showLine: isLine
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom',
+                            min: 0,
+                            max: 1.0,
+                            title: { display: true, text: labelX, font: { weight: '600' } },
+                            ticks: { stepSize: 0.1 }
+                        },
+                        y: {
+                            min: 0,
+                            suggestedMax: maxY,
+                            title: { display: true, text: labelY, font: { weight: '600' } }
+                        }
+                    }
+                }
+            };
+        }
+
+        function initCharts() {
+            if (chartTSmall) chartTSmall.destroy();
+            if (chartASmall) chartASmall.destroy();
+            if (chartTBig) chartTBig.destroy();
+            if (chartABig) chartABig.destroy();
+
+            chartTSmall = new Chart(document.getElementById('chart-T-small').getContext('2d'), createChartConfig('scatter', 'c (M)', 'Transmitancia T', 1.05, true));
+            chartASmall = new Chart(document.getElementById('chart-A-small').getContext('2d'), createChartConfig('scatter', 'c (M)', 'Absorbancia A (AU)', 3.5, false));
+            chartTBig = new Chart(document.getElementById('chart-T-big').getContext('2d'), createChartConfig('scatter', 'Concentración c (M)', 'Transmitancia T (I/I₀)', 1.05, true));
+            chartABig = new Chart(document.getElementById('chart-A-big').getContext('2d'), createChartConfig('scatter', 'Concentración c (M)', 'Absorbancia A (AU)', 3.5, false));
         }
 
         function updateChartsAndRegression() {
-            const dataT = measurements.map(m => ({ x: parseFloat(m.c), y: parseFloat(m.T) }));
-            const dataA = measurements.map(m => ({ x: parseFloat(m.c), y: parseFloat(m.A) }));
+            // Se ordenan los datos por concentración (x) para trazar la curva decreciente limpia de T vs c
+            const sortedData = [...measurements].sort((a, b) => parseFloat(a.c) - parseFloat(b.c));
+            
+            const dataT = sortedData.map(m => ({ x: parseFloat(m.c), y: parseFloat(m.T) }));
+            const dataA = sortedData.map(m => ({ x: parseFloat(m.c), y: parseFloat(m.A) }));
 
-            chartT.data.datasets[0].data = dataT; 
-            chartA.data.datasets[0].data = dataA;
-            chartT.update(); 
-            chartA.update();
+            [chartTSmall, chartTBig].forEach(c => { c.data.datasets[0].data = dataT; c.update(); });
+            [chartASmall, chartABig].forEach(c => { c.data.datasets[0].data = dataA; c.update(); });
 
             if (measurements.length < 2) return;
 
-            // Regresión Lineal A = m * c
+            // Regresión Lineal para Absorbancia
             let sumXC = 0, sumXX = 0, meanY = 0;
             const n = dataA.length;
             dataA.forEach(pt => { sumXC += pt.x * pt.y; sumXX += pt.x * pt.x; meanY += pt.y; });
