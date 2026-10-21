@@ -104,8 +104,7 @@
         /* CUBETA CON PASO ÓPTICO DINÁMICO */
         .cuvette-holder { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; }
         .cuvette {
-            width: 60px; /* Cambia dinámicamente con JS según L */
-            height: 120px; border: 3px solid rgba(255,255,255,0.9);
+            width: 62px; height: 120px; border: 3px solid rgba(255,255,255,0.9);
             border-top: none; border-radius: 0 0 6px 6px; position: relative;
             background: rgba(255,255,255,0.04); overflow: hidden;
             transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -136,7 +135,7 @@
         .readout small { color: #64748b; font-size: 0.75rem; font-weight: 600; display: block; }
         .readout strong { font-size: 1.15rem; color: var(--bg-dark); }
 
-        /* GRÁFICOS Y TABBED VIEW */
+        /* GRÁFICOS Y VISTA POR PESTAÑAS */
         .chart-container-box { position: relative; height: 360px; margin-bottom: 10px; }
         .chart-view { position: absolute; width: 100%; height: 100%; visibility: hidden; opacity: 0; transition: opacity 0.2s; }
         .chart-view.active { visibility: visible; opacity: 1; }
@@ -211,7 +210,7 @@
             </div>
         </section>
 
-        <!-- PANEL 2: BENCH ESPECTROFOTOMÉTRICO (ANIMADO Y DINÁMICO) -->
+        <!-- PANEL 2: BENCH ESPECTROFOTOMÉTRICO (ANIMADO) -->
         <section class="panel panel-visualizer">
             <h2>2. Celda Fotométrica Virtual <small style="font-weight: normal; color: #64748b;">(Esquema Óptico)</small></h2>
             
@@ -285,7 +284,7 @@
 
     </main>
 
-    <!-- PANEL 4: TABLA DE DATOS Y EXPORTADOR EN ESPAÑOL -->
+    <!-- PANEL 4: TABLA DE DATOS Y EXPORTADOR CORREGIDO -->
     <footer class="panel panel-table">
         <div class="table-header">
             <h2>4. Matriz de Datos de la Sesión</h2>
@@ -368,7 +367,6 @@
             valConc.textContent = c.toFixed(2);
             labelL.textContent = L.toFixed(1);
 
-            // Ancho físico dinámico de la cubeta según L (0.5cm -> 40px, 1.0cm -> 60px, 2.0cm -> 95px)
             const cuvetteWidths = { '0.5': '42px', '1.0': '62px', '2.0': '95px' };
             cuvette.style.width = cuvetteWidths[L] || '62px';
 
@@ -424,7 +422,6 @@
         btnMeasure.addEventListener('click', () => {
             if (!isCalibrated) return;
 
-            // Animación de destello de captura fotométrica
             opticsBench.classList.add('flash');
             setTimeout(() => opticsBench.classList.remove('flash'), 150);
 
@@ -459,25 +456,38 @@
             tableBody.appendChild(row);
         }
 
+        // FUNCIÓN CORREGIDA CON BLOB Y URL.createObjectURL PARA EVITAR FALLOS DE NAVEGADOR
         btnExportCSV.addEventListener('click', () => {
-            if (measurements.length === 0) { alert("No hay datos registrados para exportar."); return; }
+            if (measurements.length === 0) { 
+                alert("No hay datos registrados para exportar."); 
+                return; 
+            }
             
-            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-            csvContent += "# LABLIGHT VIRTUAL - REGISTRO EXPERIMENTAL DE ESPECTROFOTOMETRÍA\n";
-            csvContent += `# Fecha: ${new Date().toLocaleDateString('es-CL')}\n`;
-            csvContent += "N°,Longitud_Onda_nm,Paso_Optico_cm,Concentracion_M,Intensidad_Base_pct,Intensidad_Transmitida_pct,Transmitancia_T,Absorbancia_AU\n";
+            // Construcción del archivo CSV con codificación UTF-8 BOM para Excel
+            let csvText = "\uFEFF";
+            csvText += "# LABLIGHT VIRTUAL - REGISTRO EXPERIMENTAL DE ESPECTROFOTOMETRIA\n";
+            csvText += `# Fecha: ${new Date().toLocaleDateString('es-CL')}\n`;
+            csvText += "N°,Longitud_Onda_nm,Paso_Optico_cm,Concentracion_M,Intensidad_Base_pct,Intensidad_Transmitida_pct,Transmitancia_T,Absorbancia_AU\n";
             
             measurements.forEach(m => { 
-                csvContent += `${m.id},${m.wl},${m.L},${m.c},${m.I0},${m.I},${m.T},${m.A}\n`; 
+                csvText += `${m.id},${m.wl},${m.L},${m.c},${m.I0},${m.I},${m.T},${m.A}\n`; 
             });
+
+            // Generación mediante Blob seguro
+            const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
             
             const link = document.createElement("a");
-            link.setAttribute("href", encodeURI(csvContent));
+            link.setAttribute("href", url);
             link.setAttribute("download", "matriz_datos_lablight.csv");
-            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            document.body.appendChild(link); 
+            link.click(); 
+            
+            // Limpieza de memoria
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         });
 
-        // PESTAÑAS DE VISUALIZACIÓN GRÁFICA
         function setupTabs() {
             const btnBoth = document.getElementById('tab-both');
             const btnT = document.getElementById('tab-T');
@@ -498,7 +508,6 @@
             btnA.addEventListener('click', () => switchTab(btnA, viewA));
         }
 
-        // GRÁFICOS CON ESCALA LINEAL Y PUNTOS ORDENADOS
         function createChartConfig(type, labelX, labelY, maxY, isLine = false) {
             return {
                 type: 'scatter',
@@ -549,7 +558,6 @@
         }
 
         function updateChartsAndRegression() {
-            // Se ordenan los datos por concentración (x) para trazar la curva decreciente limpia de T vs c
             const sortedData = [...measurements].sort((a, b) => parseFloat(a.c) - parseFloat(b.c));
             
             const dataT = sortedData.map(m => ({ x: parseFloat(m.c), y: parseFloat(m.T) }));
@@ -560,7 +568,6 @@
 
             if (measurements.length < 2) return;
 
-            // Regresión Lineal para Absorbancia
             let sumXC = 0, sumXX = 0, meanY = 0;
             const n = dataA.length;
             dataA.forEach(pt => { sumXC += pt.x * pt.y; sumXX += pt.x * pt.x; meanY += pt.y; });
