@@ -46,6 +46,7 @@
         .btn-success { background: var(--success-color); color: white; }
         .btn-secondary { background: #475569; color: white; }
         .btn-danger { background: var(--danger-color); color: white; }
+        .btn-purple { background: #8b5cf6; color: white; }
         .btn-tab { background: #e2e8f0; color: #334155; padding: 6px 12px; font-size: 0.8rem; }
         .btn-tab.active { background: var(--primary-color); color: white; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -87,7 +88,7 @@
             box-shadow: 0 0 8px rgba(125, 211, 252, 0.4);
         }
 
-        /* HACES DE LUZ FOTÓNICOS ANIMADOS */
+        /* HACES DE LUZ ANIMADOS */
         .beam-path { height: 16px; flex-grow: 1; position: relative; display: flex; align-items: center; }
         .light-beam {
             height: 100%; width: 100%; background: #22c55e;
@@ -101,7 +102,7 @@
         }
         @keyframes beam-pulse { 0% { left: -100%; } 100% { left: 100%; } }
 
-        /* CUBETA CON PASO ÓPTICO DINÁMICO */
+        /* CUBETA DINÁMICA */
         .cuvette-holder { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; }
         .cuvette {
             width: 62px; height: 120px; border: 3px solid rgba(255,255,255,0.9);
@@ -206,6 +207,7 @@
             <div class="button-group">
                 <button id="btn-calibrate" class="btn btn-primary">Calibrar Blanco (I₀)</button>
                 <button id="btn-measure" class="btn btn-success" disabled>Registrar Muestra (I)</button>
+                <button id="btn-save-series" class="btn btn-purple" disabled>📌 Guardar Serie p/ Comparar</button>
                 <button id="btn-reset" class="btn btn-danger">Reiniciar Ensayo</button>
             </div>
         </section>
@@ -256,7 +258,7 @@
             </div>
         </section>
 
-        <!-- PANEL 3: CURVAS ANALÍTICAS CON SELECCIÓN DE PESTAÑAS -->
+        <!-- PANEL 3: CURVAS ANALÍTICAS CON SUPERPOSICIÓN DE ENSAYOS -->
         <section class="panel panel-charts">
             <h2>
                 3. Curvas Analíticas
@@ -277,14 +279,14 @@
             </div>
 
             <div class="regression-info">
-                <span>Ajuste Lineal: <strong>A = <span id="reg-slope">0.000</span> &middot; c</strong></span>
+                <span>Ajuste Lineal Activo: <strong>A = <span id="reg-slope">0.000</span> &middot; c</strong></span>
                 <span>Coeficiente R²: <strong id="reg-r2">---</strong></span>
             </div>
         </section>
 
     </main>
 
-    <!-- PANEL 4: TABLA DE DATOS Y EXPORTADOR CORREGIDO -->
+    <!-- PANEL 4: TABLA DE DATOS Y EXPORTADOR CORREGIDO PARA EXCEL -->
     <footer class="panel panel-table">
         <div class="table-header">
             <h2>4. Matriz de Datos de la Sesión</h2>
@@ -294,6 +296,7 @@
             <table id="data-table">
                 <thead>
                     <tr>
+                        <th>Serie</th>
                         <th>N°</th>
                         <th>&lambda; (nm)</th>
                         <th>L (cm)</th>
@@ -312,8 +315,13 @@
     <script>
         let isCalibrated = false;
         let I0 = 100.0;
-        let measurements = [];
+        let currentSeriesName = "Serie Actual";
+        let currentSeriesIndex = 1;
+        let measurements = []; // Medidas del ensayo activo
+        let savedSeriesList = []; // Lista de series congeladas para comparaciones
         let chartTSmall, chartASmall, chartTBig, chartABig;
+
+        const colorPalette = ['#0d6efd', '#198754', '#d97706', '#dc2626', '#7c3aed', '#0891b2'];
 
         const selectWavelength = document.getElementById('select-wavelength');
         const selectPathlength = document.getElementById('select-pathlength');
@@ -324,6 +332,7 @@
 
         const btnCalibrate = document.getElementById('btn-calibrate');
         const btnMeasure = document.getElementById('btn-measure');
+        const btnSaveSeries = document.getElementById('btn-save-series');
         const btnReset = document.getElementById('btn-reset');
         const btnExportCSV = document.getElementById('btn-export-csv');
 
@@ -413,9 +422,10 @@
 
         btnCalibrate.addEventListener('click', () => {
             isCalibrated = true; I0 = 100.0;
-            statusBadge.textContent = "Estado: Calibrado (I₀ = 100%)";
+            statusBadge.textContent = `Estado: Calibrado (${currentSeriesName})`;
             statusBadge.className = "badge badge-success";
-            btnMeasure.disabled = false; sliderConc.value = 0.0;
+            btnMeasure.disabled = false;
+            sliderConc.value = 0.0;
             updateSimulationUI();
         });
 
@@ -436,45 +446,93 @@
             let I_simulated = T_simulated * I0;
             let A_simulated = -Math.log10(T_simulated);
 
-            const record = { id: measurements.length + 1, wl, L, c, I0: I0.toFixed(1), I: I_simulated.toFixed(1), T: T_simulated.toFixed(3), A: A_simulated.toFixed(3) };
+            const record = { 
+                series: currentSeriesName,
+                id: measurements.length + 1, 
+                wl, L, c, 
+                I0: I0.toFixed(1), 
+                I: I_simulated.toFixed(1), 
+                T: T_simulated.toFixed(3), 
+                A: A_simulated.toFixed(3) 
+            };
+            
             measurements.push(record);
+            btnSaveSeries.disabled = false;
             addTableRow(record);
             updateChartsAndRegression();
         });
 
+        // FUNCIONALIDAD OPCIÓN 6: GUARDAR SERIE PARA COMPARACIÓN DE CURVAS
+        btnSaveSeries.addEventListener('click', () => {
+            if (measurements.length === 0) return;
+
+            const wl = measurements[0].wl;
+            const L = measurements[0].L;
+            const color = colorPalette[(savedSeriesList.length + 1) % colorPalette.length];
+
+            savedSeriesList.push({
+                name: `Serie ${currentSeriesIndex} (${wl}nm, L=${L}cm)`,
+                color: color,
+                data: [...measurements]
+            });
+
+            currentSeriesIndex++;
+            currentSeriesName = `Serie ${currentSeriesIndex}`;
+            measurements = []; // Reiniciar para el nuevo ensayo
+            isCalibrated = false;
+
+            statusBadge.textContent = "Estado: Sin Calibrar (Nueva Serie)";
+            statusBadge.className = "badge badge-warning";
+            btnMeasure.disabled = true;
+            btnSaveSeries.disabled = true;
+
+            updateChartsAndRegression();
+            updateSimulationUI();
+        });
+
         btnReset.addEventListener('click', () => {
-            isCalibrated = false; measurements = [];
-            statusBadge.textContent = "Estado: Sin Calibrar"; statusBadge.className = "badge badge-warning";
-            btnMeasure.disabled = true; tableBody.innerHTML = "";
-            regSlope.textContent = "0.000"; regR2.textContent = "---";
-            initCharts(); updateSimulationUI();
+            isCalibrated = false; 
+            measurements = [];
+            savedSeriesList = [];
+            currentSeriesIndex = 1;
+            currentSeriesName = "Serie 1";
+
+            statusBadge.textContent = "Estado: Sin Calibrar"; 
+            statusBadge.className = "badge badge-warning";
+            btnMeasure.disabled = true; 
+            btnSaveSeries.disabled = true;
+            tableBody.innerHTML = "";
+            regSlope.textContent = "0.000"; 
+            regR2.textContent = "---";
+            initCharts(); 
+            updateSimulationUI();
         });
 
         function addTableRow(m) {
             const row = document.createElement('tr');
-            row.innerHTML = `<td>${m.id}</td><td>${m.wl}</td><td>${m.L}</td><td>${m.c}</td><td>${m.I0}</td><td>${m.I}</td><td>${m.T}</td><td>${m.A}</td>`;
+            row.innerHTML = `<td><strong>${m.series}</strong></td><td>${m.id}</td><td>${m.wl}</td><td>${m.L}</td><td>${m.c}</td><td>${m.I0}</td><td>${m.I}</td><td>${m.T}</td><td>${m.A}</td>`;
             tableBody.appendChild(row);
         }
 
-        // FUNCIÓN CORREGIDA CON BLOB Y URL.createObjectURL PARA EVITAR FALLOS DE NAVEGADOR
+        // EXPORTACIÓN A EXCEL / CSV CON SOPORTE DE MÚLTIPLES SERIES
         btnExportCSV.addEventListener('click', () => {
-            if (measurements.length === 0) { 
+            let allData = [];
+            savedSeriesList.forEach(s => allData.push(...s.data));
+            allData.push(...measurements);
+
+            if (allData.length === 0) { 
                 alert("No hay datos registrados para exportar."); 
                 return; 
             }
             
-            // Construcción del archivo CSV con codificación UTF-8 BOM para Excel
-            let csvText = "\uFEFF";
-            csvText += "# LABLIGHT VIRTUAL - REGISTRO EXPERIMENTAL DE ESPECTROFOTOMETRIA\n";
-            csvText += `# Fecha: ${new Date().toLocaleDateString('es-CL')}\n`;
-            csvText += "N°,Longitud_Onda_nm,Paso_Optico_cm,Concentracion_M,Intensidad_Base_pct,Intensidad_Transmitida_pct,Transmitancia_T,Absorbancia_AU\n";
+            let csvText = "Serie;N°;Longitud_Onda_nm;Paso_Optico_cm;Concentracion_M;Intensidad_Base_pct;Intensidad_Transmitida_pct;Transmitancia_T;Absorbancia_AU\n";
             
-            measurements.forEach(m => { 
-                csvText += `${m.id},${m.wl},${m.L},${m.c},${m.I0},${m.I},${m.T},${m.A}\n`; 
+            allData.forEach(m => { 
+                csvText += `${m.series};${m.id};${m.wl};${m.L};${m.c};${m.I0};${m.I};${m.T};${m.A}\n`; 
             });
 
-            // Generación mediante Blob seguro
-            const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+            const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+            const blob = new Blob([bom, csvText], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             
             const link = document.createElement("a");
@@ -483,7 +541,6 @@
             document.body.appendChild(link); 
             link.click(); 
             
-            // Limpieza de memoria
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
         });
@@ -508,24 +565,16 @@
             btnA.addEventListener('click', () => switchTab(btnA, viewA));
         }
 
-        function createChartConfig(type, labelX, labelY, maxY, isLine = false) {
+        function createChartConfig(labelX, labelY, maxY, isLine = false) {
             return {
                 type: 'scatter',
-                data: {
-                    datasets: [{
-                        label: labelY,
-                        data: [],
-                        borderColor: isLine ? '#0d6efd' : '#198754',
-                        backgroundColor: isLine ? '#0d6efd' : '#198754',
-                        pointRadius: 7,
-                        pointHoverRadius: 10,
-                        borderWidth: 2,
-                        showLine: isLine
-                    }]
-                },
+                data: { datasets: [] },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true, position: 'top', labels: { boxWidth: 12, font: { size: 10 } } }
+                    },
                     scales: {
                         x: {
                             type: 'linear',
@@ -551,39 +600,77 @@
             if (chartTBig) chartTBig.destroy();
             if (chartABig) chartABig.destroy();
 
-            chartTSmall = new Chart(document.getElementById('chart-T-small').getContext('2d'), createChartConfig('scatter', 'c (M)', 'Transmitancia T', 1.05, true));
-            chartASmall = new Chart(document.getElementById('chart-A-small').getContext('2d'), createChartConfig('scatter', 'c (M)', 'Absorbancia A (AU)', 3.5, false));
-            chartTBig = new Chart(document.getElementById('chart-T-big').getContext('2d'), createChartConfig('scatter', 'Concentración c (M)', 'Transmitancia T (I/I₀)', 1.05, true));
-            chartABig = new Chart(document.getElementById('chart-A-big').getContext('2d'), createChartConfig('scatter', 'Concentración c (M)', 'Absorbancia A (AU)', 3.5, false));
+            chartTSmall = new Chart(document.getElementById('chart-T-small').getContext('2d'), createChartConfig('c (M)', 'Transmitancia T', 1.05, true));
+            chartASmall = new Chart(document.getElementById('chart-A-small').getContext('2d'), createChartConfig('c (M)', 'Absorbancia A (AU)', 3.5, false));
+            chartTBig = new Chart(document.getElementById('chart-T-big').getContext('2d'), createChartConfig('Concentración c (M)', 'Transmitancia T (I/I₀)', 1.05, true));
+            chartABig = new Chart(document.getElementById('chart-A-big').getContext('2d'), createChartConfig('Concentración c (M)', 'Absorbancia A (AU)', 3.5, false));
         }
 
+        // RENDERIZADO DINÁMICO CON SUPERPOSICIÓN DE ENSAYOS
         function updateChartsAndRegression() {
-            const sortedData = [...measurements].sort((a, b) => parseFloat(a.c) - parseFloat(b.c));
-            
-            const dataT = sortedData.map(m => ({ x: parseFloat(m.c), y: parseFloat(m.T) }));
-            const dataA = sortedData.map(m => ({ x: parseFloat(m.c), y: parseFloat(m.A) }));
+            let datasetsT = [];
+            let datasetsA = [];
 
-            [chartTSmall, chartTBig].forEach(c => { c.data.datasets[0].data = dataT; c.update(); });
-            [chartASmall, chartABig].forEach(c => { c.data.datasets[0].data = dataA; c.update(); });
-
-            if (measurements.length < 2) return;
-
-            let sumXC = 0, sumXX = 0, meanY = 0;
-            const n = dataA.length;
-            dataA.forEach(pt => { sumXC += pt.x * pt.y; sumXX += pt.x * pt.x; meanY += pt.y; });
-            meanY /= n;
-            const slope = sumXX === 0 ? 0 : sumXC / sumXX;
-
-            let ssTot = 0, ssRes = 0;
-            dataA.forEach(pt => {
-                const yPred = slope * pt.x;
-                ssRes += Math.pow(pt.y - yPred, 2);
-                ssTot += Math.pow(pt.y - meanY, 2);
+            // 1. Agregar series guardadas en la comparación
+            savedSeriesList.forEach(s => {
+                const sorted = [...s.data].sort((a, b) => parseFloat(a.c) - parseFloat(b.c));
+                datasetsT.push({
+                    label: s.name,
+                    data: sorted.map(m => ({ x: parseFloat(m.c), y: parseFloat(m.T) })),
+                    borderColor: s.color, backgroundColor: s.color, pointRadius: 5, showLine: true
+                });
+                datasetsA.push({
+                    label: s.name,
+                    data: sorted.map(m => ({ x: parseFloat(m.c), y: parseFloat(m.A) })),
+                    borderColor: s.color, backgroundColor: s.color, pointRadius: 5, showLine: false
+                });
             });
 
-            const r2 = ssTot === 0 ? 1.0 : Math.max(0, 1 - (ssRes / ssTot));
-            regSlope.textContent = slope.toFixed(3);
-            regR2.textContent = r2.toFixed(4);
+            // 2. Agregar serie activa actual
+            if (measurements.length > 0) {
+                const sortedActive = [...measurements].sort((a, b) => parseFloat(a.c) - parseFloat(b.c));
+                const activeColor = '#0d6efd';
+                
+                datasetsT.push({
+                    label: `${currentSeriesName} (Activa)`,
+                    data: sortedActive.map(m => ({ x: parseFloat(m.c), y: parseFloat(m.T) })),
+                    borderColor: activeColor, backgroundColor: activeColor, pointRadius: 7, pointHoverRadius: 10, showLine: true
+                });
+                datasetsA.push({
+                    label: `${currentSeriesName} (Activa)`,
+                    data: sortedActive.map(m => ({ x: parseFloat(m.c), y: parseFloat(m.A) })),
+                    borderColor: '#198754', backgroundColor: '#198754', pointRadius: 7, pointHoverRadius: 10, showLine: false
+                });
+            }
+
+            [chartTSmall, chartTBig].forEach(c => { c.data.datasets = datasetsT; c.update(); });
+            [chartASmall, chartABig].forEach(c => { c.data.datasets = datasetsA; c.update(); });
+
+            // 3. Regresión lineal para la serie activa
+            if (measurements.length >= 2) {
+                const sortedActive = [...measurements].sort((a, b) => parseFloat(a.c) - parseFloat(b.c));
+                const dataA = sortedActive.map(m => ({ x: parseFloat(m.c), y: parseFloat(m.A) }));
+
+                let sumXC = 0, sumXX = 0, meanY = 0;
+                const n = dataA.length;
+                dataA.forEach(pt => { sumXC += pt.x * pt.y; sumXX += pt.x * pt.x; meanY += pt.y; });
+                meanY /= n;
+                const slope = sumXX === 0 ? 0 : sumXC / sumXX;
+
+                let ssTot = 0, ssRes = 0;
+                dataA.forEach(pt => {
+                    const yPred = slope * pt.x;
+                    ssRes += Math.pow(pt.y - yPred, 2);
+                    ssTot += Math.pow(pt.y - meanY, 2);
+                });
+
+                const r2 = ssTot === 0 ? 1.0 : Math.max(0, 1 - (ssRes / ssTot));
+                regSlope.textContent = slope.toFixed(3);
+                regR2.textContent = r2.toFixed(4);
+            } else {
+                regSlope.textContent = "0.000";
+                regR2.textContent = "---";
+            }
         }
     </script>
 </body>
